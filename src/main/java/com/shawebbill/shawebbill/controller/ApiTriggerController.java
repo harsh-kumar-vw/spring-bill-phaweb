@@ -28,7 +28,7 @@ public class ApiTriggerController {
 	@Autowired
 	private RestTemplate restTemplate;
 	@RequestMapping(value = "/programs", method = RequestMethod.GET)
-	public ResponseEntity getPrograms() throws IOException, InterruptedException {
+	public Program[] getPrograms() throws IOException, InterruptedException {
 		ObjectMapper mapper = new ObjectMapper();
 		String username = "APIUser";
 		String password = "MTE5MF4qKl55NTN4dWVmc3k1M3h1ZWZz";
@@ -44,11 +44,7 @@ public class ApiTriggerController {
 		HttpResponse < String > response = HttpClient.newHttpClient()
 				.send(request, HttpResponse.BodyHandlers.ofString());
 		Program[] programs = mapper.readValue(response.body(), Program[].class);
-		List < String > programDescriptions = new ArrayList < String > ();
-		for (Program i: programs) {
-			programDescriptions.add(i.getProgramType());
-		}
-		return new ResponseEntity(programDescriptions, HttpStatus.OK);
+		return programs;
 	}
 
 	@RequestMapping(value = "/vendors", method = RequestMethod.GET)
@@ -321,6 +317,46 @@ public class ApiTriggerController {
 			}
 			return "Vendors Created";
 		}catch (Exception ex){
+			return ex.getMessage().toString();
+		}
+	}
+
+	@RequestMapping(value = "/createDepartment", method = RequestMethod.GET)
+	public String createDepartment(Program program) throws IOException {
+		String json="" ;
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			DepartmentData departmentData = new DepartmentData();
+			departmentData.setEntity("Department");
+			departmentData.setName(program.getProgramType());
+			departmentData.setDescription(program.getProgramDescription());
+			departmentData.setIsActive("1");
+			ObjData obj = new ObjData();
+			obj.setObj(departmentData);
+			json = ow.writeValueAsString(obj);
+			body.add("data", json);
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Crud/Create/Department.json", request, Map.class);
+			return response.getBody().toString();
+		}catch (Exception ex){
+			return ex.getMessage().toString();
+		}
+	}
+	@RequestMapping(value = "/createDepartments", method = RequestMethod.GET)
+	public String createDepartments() throws IOException {
+		try {
+			Program[] programs = getPrograms();
+			for (Program program : programs) {
+				createDepartment(program);
+			}
+			return "Programs created";
+		} catch (Exception ex) {
 			return ex.getMessage().toString();
 		}
 	}
