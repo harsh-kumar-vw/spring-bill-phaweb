@@ -6,6 +6,14 @@ public class Vendor {
     private String firstName;
     private String lastName;
     private String vendorCode;
+    private String address1;
+    private String addressCity;
+    private String addressState;
+    private String addressZip;
+    private String addressCountry;
+    private String phone;
+    private String email;
+
 
     // Getters and setters
 

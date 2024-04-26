@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BillVendor {
     private int responseStatus;
     private String responseMessage;
@@ -40,7 +40,7 @@ public class BillVendor {
     }
 }
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class VendorData {
     public String vendor;
     public String entity;
@@ -54,6 +54,10 @@ class VendorData {
 	public String addressCountry;
 	public String email;
 	public String phone;
+    public String companyName;
+    public String contactLastName;
+    public String contactFirstName;
+
 
     @JsonProperty("vendor")
     public void setVendor(String vendor) {
@@ -76,7 +80,7 @@ class VendorData {
     }
 }
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Data {
     public VendorData obj;
     @JsonProperty("obj")
@@ -85,7 +89,7 @@ class Data {
     }
 }
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class RequestBody {
     public String data;
     public String devKey;
