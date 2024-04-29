@@ -1,7 +1,10 @@
 package com.shawebbill.shawebbill.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DistributionResponse {
     private List<DistributionListItem> distributionList;
 
@@ -14,6 +17,7 @@ public class DistributionResponse {
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 class DistributionListItem {
     private int distributionListId;
     private String distributionListType;
@@ -71,6 +75,7 @@ class DistributionListItem {
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Distribution {
     private int distributionId;
     private int accountId;

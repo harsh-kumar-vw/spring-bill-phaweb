@@ -462,5 +462,63 @@ public class ApiTriggerController {
 		}
 		return biList;
 	}
+
+	@RequestMapping(value = "/getProjects", method = RequestMethod.GET)
+	public Project[] getProjects() throws IOException,InterruptedException {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			String encodedCredentials = getPhaWebToken();
+			HttpRequest request = HttpRequest.newBuilder()
+					.uri(URI.create("https://sandbox.pha-web.com/api/programManager/v1/project?programId=-1"))
+					.header("Authorization", "Basic " + encodedCredentials)
+					.header("Content-Type", "application/json")
+					.GET()
+					.build();
+			HttpResponse<String> response = HttpClient.newHttpClient()
+					.send(request, HttpResponse.BodyHandlers.ofString());
+			Project[] projects = mapper.readValue(response.body(), Project[].class);
+			return projects;
+		}catch (Exception ex){
+			return null;
+		}
+	}
+
+	@RequestMapping(value = "/createJobs", method = RequestMethod.GET)
+	public String createJobs() throws IOException,InterruptedException {
+		String json="";
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			BulkClass bc = new BulkClass();
+			Project[] projects= getProjects();
+			List<BulkItem> biList = createBulkJobs(projects);
+			bc.setBulk(biList);
+			body.add("data",ow.writeValueAsString(bc));
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Bulk/Crud/Create/Job.json", request, Map.class);
+			return response.getBody().toString();
+		} catch (Exception ex) {
+			return ex.getMessage().toString();
+		}
+	}
+
+	public List<BulkItem> createBulkJobs(Project[] projects) throws IOException,InterruptedException {
+		List<BulkItem> biList = new ArrayList<>();
+		for(Project p: projects) {
+			Obj ob = new Obj();
+			ob.setEntity("Job");
+			ob.setName(p.getProjectDescription());
+			ob.setIsActive("1");
+			BulkItem bi = new BulkItem();
+			bi.setObj(ob);
+			biList.add(bi);
+		}
+		return biList;
+	}
 }
 

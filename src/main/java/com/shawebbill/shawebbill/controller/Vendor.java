@@ -1,5 +1,8 @@
 package com.shawebbill.shawebbill.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Vendor {
     private int vendorId;
     private String businessName;
@@ -55,16 +58,5 @@ public class Vendor {
 
     public void setVendorCode(String vendorCode) {
         this.vendorCode = vendorCode;
-    }
-
-    @Override
-    public String toString() {
-        return "Vendor{" +
-                "vendorId=" + vendorId +
-                ", businessName='" + businessName + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", vendorCode='" + vendorCode + '\'' +
-                '}';
     }
 }
