@@ -8,7 +8,6 @@ package com.shawebbill.shawebbill.controller;
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public class Account {
 		public List<AccountData> data;
-
 	    public List<AccountData> getData() {
 	        return this.data;
 	    }

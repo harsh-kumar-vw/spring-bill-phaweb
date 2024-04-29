@@ -28,7 +28,7 @@ public class ApiTriggerController {
 	@Autowired
 	private RestTemplate restTemplate;
 	@RequestMapping(value = "/programs", method = RequestMethod.GET)
-	public ResponseEntity getPrograms() throws IOException, InterruptedException {
+	public Program[] getPrograms() throws IOException, InterruptedException {
 		ObjectMapper mapper = new ObjectMapper();
 		String username = "APIUser";
 		String password = "MTE5MF4qKl55NTN4dWVmc3k1M3h1ZWZz";
@@ -44,11 +44,7 @@ public class ApiTriggerController {
 		HttpResponse < String > response = HttpClient.newHttpClient()
 				.send(request, HttpResponse.BodyHandlers.ofString());
 		Program[] programs = mapper.readValue(response.body(), Program[].class);
-		List < String > programDescriptions = new ArrayList < String > ();
-		for (Program i: programs) {
-			programDescriptions.add(i.getProgramType());
-		}
-		return new ResponseEntity(programDescriptions, HttpStatus.OK);
+		return programs;
 	}
 
 	@RequestMapping(value = "/vendors", method = RequestMethod.GET)
@@ -92,7 +88,7 @@ public class ApiTriggerController {
 
 
 	@RequestMapping(value = "/accounts", method = RequestMethod.GET)
-	public ResponseEntity getAccounts() throws IOException, InterruptedException {
+	public AccountData[] getAccounts() throws IOException, InterruptedException {
 		ObjectMapper mapper = new ObjectMapper();
 		String encodedCredentials = getPhaWebToken();
 		HttpRequest request = HttpRequest.newBuilder()
@@ -108,7 +104,7 @@ public class ApiTriggerController {
 		for (AccountData i: accounts)
 			accountNames.add(i.getAccountName());
 		ResponseEntity responseEntity = new ResponseEntity(accountNames, HttpStatus.OK);
-		return responseEntity;
+		return accounts;
 	}
 
 	public String getPhaWebToken() throws IOException {
@@ -324,4 +320,205 @@ public class ApiTriggerController {
 			return ex.getMessage().toString();
 		}
 	}
+
+	@RequestMapping(value = "/createDepartment", method = RequestMethod.GET)
+	public String createDepartment(Program program) throws IOException {
+		String json="" ;
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			DepartmentData departmentData = new DepartmentData();
+			departmentData.setEntity("Department");
+			departmentData.setName(program.getProgramType());
+			departmentData.setDescription(program.getProgramDescription());
+			departmentData.setIsActive("1");
+			ObjData obj = new ObjData();
+			obj.setObj(departmentData);
+			json = ow.writeValueAsString(obj);
+			body.add("data", json);
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Crud/Create/Department.json", request, Map.class);
+			return response.getBody().toString();
+		}catch (Exception ex){
+			return ex.getMessage().toString();
+		}
+	}
+	@RequestMapping(value = "/createDepartments", method = RequestMethod.GET)
+	public String createDepartments() throws IOException {
+		try {
+			Program[] programs = getPrograms();
+			for (Program program : programs) {
+				createDepartment(program);
+			}
+			return "Programs created";
+		} catch (Exception ex) {
+			return ex.getMessage().toString();
+		}
+	}
+
+	@RequestMapping(value = "/createAccount", method = RequestMethod.GET)
+	public String createAccount() throws IOException,InterruptedException {
+		String json="";
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			BulkClass bc = new BulkClass();
+			AccountData[] accountData = getAccounts();
+			List<BulkItem> biList = createBulkItems(accountData);
+			bc.setBulk(biList);
+			body.add("data",ow.writeValueAsString(bc));
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Bulk/Crud/Create/ChartOfAccount.json", request, Map.class);
+			return response.getBody().toString();
+		} catch (Exception ex) {
+			return ex.getMessage().toString();
+		}
+	}
+
+	public List<BulkItem> createBulkItems(AccountData[] accounts) throws IOException,InterruptedException {
+		List<BulkItem> biList = new ArrayList<>();
+		for(AccountData ad: accounts) {
+			Obj ob = new Obj();
+			ob.setEntity("ChartOfAccount");
+			ob.setAccountType("1");
+			ob.setName(ad.getAccountName());
+			ob.setIsActive("1");
+			BulkItem bi = new BulkItem();
+			bi.setObj(ob);
+			biList.add(bi);
+		}
+		return biList;
+	}
+
+	@RequestMapping(value = "/getDistributions", method = RequestMethod.GET)
+	public DistributionListItem[] getDistributions() throws IOException,InterruptedException{
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			String encodedCredentials = getPhaWebToken();
+			HttpRequest request = HttpRequest.newBuilder()
+					.uri(URI.create("https://sandbox.pha-web.com/api/vendor/v1/distributions?programId=-1"))
+					.header("Authorization", "Basic " + encodedCredentials)
+					.header("Content-Type", "application/json")
+					.GET()
+					.build();
+			HttpResponse<String> response = HttpClient.newHttpClient()
+					.send(request, HttpResponse.BodyHandlers.ofString());
+			DistributionListItem[] distributionListItems = mapper.readValue(response.body(), DistributionListItem[].class);
+			return distributionListItems;
+		}catch (Exception ex){
+			return null;
+		}
+	}
+
+	@RequestMapping(value = "/createClasses", method = RequestMethod.GET)
+	public String createAcctgClasses() throws IOException,InterruptedException {
+		String json="";
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			BulkClass bc = new BulkClass();
+			DistributionListItem[] distributionListItems = getDistributions();
+			List<Distribution> distributions = new ArrayList<>();
+			for(DistributionListItem dli: distributionListItems){
+				distributions.addAll(dli.getDistributions());
+			}
+			List<BulkItem> biList = createBulkDistributions(distributions);
+			bc.setBulk(biList);
+			body.add("data",ow.writeValueAsString(bc));
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Bulk/Crud/Create/ActgClass.json", request, Map.class);
+			return response.getBody().toString();
+		} catch (Exception ex) {
+			return ex.getMessage().toString();
+		}
+	}
+
+	public List<BulkItem> createBulkDistributions(List<Distribution> distributions) throws IOException,InterruptedException {
+		List<BulkItem> biList = new ArrayList<>();
+		for(Distribution d: distributions) {
+			Obj ob = new Obj();
+			ob.setEntity("ActgClass");
+			ob.setAccountType("1");
+			ob.setName(String.valueOf(d.getDistributionId()));
+			ob.setIsActive("1");
+			BulkItem bi = new BulkItem();
+			bi.setObj(ob);
+			biList.add(bi);
+		}
+		return biList;
+	}
+
+	@RequestMapping(value = "/getProjects", method = RequestMethod.GET)
+	public Project[] getProjects() throws IOException,InterruptedException {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			String encodedCredentials = getPhaWebToken();
+			HttpRequest request = HttpRequest.newBuilder()
+					.uri(URI.create("https://sandbox.pha-web.com/api/programManager/v1/project?programId=-1"))
+					.header("Authorization", "Basic " + encodedCredentials)
+					.header("Content-Type", "application/json")
+					.GET()
+					.build();
+			HttpResponse<String> response = HttpClient.newHttpClient()
+					.send(request, HttpResponse.BodyHandlers.ofString());
+			Project[] projects = mapper.readValue(response.body(), Project[].class);
+			return projects;
+		}catch (Exception ex){
+			return null;
+		}
+	}
+
+	@RequestMapping(value = "/createJobs", method = RequestMethod.GET)
+	public String createJobs() throws IOException,InterruptedException {
+		String json="";
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			String sessionId = getBillSessionId();
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			ObjectWriter ow = new ObjectMapper().writer();
+			body.add("devKey", "01PVVKPJTLRMTPNOI445");
+			body.add("sessionId", sessionId);
+			BulkClass bc = new BulkClass();
+			Project[] projects= getProjects();
+			List<BulkItem> biList = createBulkJobs(projects);
+			bc.setBulk(biList);
+			body.add("data",ow.writeValueAsString(bc));
+			HttpEntity<Map> request = new HttpEntity<>(body, headers);
+			ResponseEntity<Map> response = restTemplate.postForEntity("https://app-stage02.us.bill.com/api/v2/Bulk/Crud/Create/Job.json", request, Map.class);
+			return response.getBody().toString();
+		} catch (Exception ex) {
+			return ex.getMessage().toString();
+		}
+	}
+
+	public List<BulkItem> createBulkJobs(Project[] projects) throws IOException,InterruptedException {
+		List<BulkItem> biList = new ArrayList<>();
+		for(Project p: projects) {
+			Obj ob = new Obj();
+			ob.setEntity("Job");
+			ob.setName(p.getProjectDescription());
+			ob.setIsActive("1");
+			BulkItem bi = new BulkItem();
+			bi.setObj(ob);
+			biList.add(bi);
+		}
+		return biList;
+	}
 }
+
