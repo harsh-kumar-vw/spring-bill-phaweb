@@ -40,6 +40,13 @@ class ObjData {
     }
 }
 
+class Bulk {
+    public List<DepartmentData> obj;
+    public void setBulk(List<DepartmentData> obj) {
+        this.obj = obj;
+    }
+}
+
 class DepartmentData {
     private String entity;
     private String id;
@@ -51,6 +58,7 @@ class DepartmentData {
     private String createdTime;
     private String updatedTime;
     private String mergedIntoId;
+    private String accountType;
 
     public String getEntity() {
         return entity;
@@ -130,5 +138,13 @@ class DepartmentData {
 
     public void setMergedIntoId(String mergedIntoId) {
         this.mergedIntoId = mergedIntoId;
+    }
+
+    public String getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(String accountType) {
+        this.accountType = accountType;
     }
 }
